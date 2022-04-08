@@ -89,5 +89,5 @@ To fix that error, you need to run the following, because device-worker was
 already stopped:
 
 ```
-sudo rm /usr/local/var/run/yggdrasil/workers/device-worker.pid
+sudo rm ${PREFIX}/var/run/yggdrasil/workers/device-worker.pid
 ```
