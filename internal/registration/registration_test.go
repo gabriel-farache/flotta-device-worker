@@ -288,21 +288,22 @@ var _ = Describe("Registration", func() {
 				Certificate: string(clientCertPem),
 			})
 
-			reg.RetryAfter = 1
-
 			// then
 			dispatcherMock.EXPECT().Send(gomock.Any(), gomock.Any()).Return(
-				nil, fmt.Errorf("failed")).Times(1)
+				nil, fmt.Errorf("failed")).Times(4)
 			dispatcherMock.EXPECT().
 				Send(gomock.Any(), RegistrationMatcher()).
 				Return(&pb.Response{Response: msgResponse}, nil).
 				Times(1)
 
+			reg.RetryAfter = 1 //will do try then wait for 1 sec, 2 sec, 4 sec => 7sec in total for 4 attempts
+
 			//  when
 			reg.RegisterDevice()
 
 			// then
-			Eventually(reg.IsRegistered, "5s").Should(BeTrue())
+			Eventually(reg.IsRegistered, "8s").Should(BeTrue())
+			Eventually(reg.NbRetry, "8s").Should(Equal(4))
 		})
 
 	})
