@@ -146,6 +146,8 @@ type Heartbeat struct {
 	data                  *HeartbeatData
 	reg                   *registration.Registration
 	firstHearbeat         bool
+	tickerStopChan        chan bool
+	tickerIsRunning       bool
 	previousPeriodSeconds int64
 	sendLock              sync.Mutex
 	tickerLock            sync.RWMutex
@@ -170,6 +172,8 @@ func NewHeartbeatService(dispatcherClient pb.DispatcherClient, configManager *cf
 		firstHearbeat:         true,
 		previousPeriodSeconds: -1,
 		log:                   *log.New(os.Stderr, log.Prefix(), log.Flags(), log.CurrentLevel()),
+		tickerStopChan:        make(chan bool),
+		tickerIsRunning:       false,
 	}
 }
 
@@ -301,16 +305,22 @@ func (s *Heartbeat) initTicker(periodSeconds int64) {
 	s.tickerLock.Lock()
 	defer s.tickerLock.Unlock()
 	s.ticker = ticker
-	go func() {
-		for range ticker.C {
+	go s.sendHeartbeat(ticker)
+	s.log.Infof("the heartbeat was started. DeviceID: %s", s.data.workloadManager.GetDeviceID())
+}
+
+func (s *Heartbeat) sendHeartbeat(ticker *time.Ticker) {
+	for {
+		select {
+		case <-s.tickerStopChan:
+			return
+		case <-ticker.C:
 			err := s.pushInformation()
 			if err != nil {
 				s.log.Errorf("heartbeat interval cannot send the data. DeviceID: %s; err: %s", s.data.workloadManager.GetDeviceID(), err)
 			}
 		}
-	}()
-
-	s.log.Infof("the heartbeat was started. DeviceID: %s", s.data.workloadManager.GetDeviceID())
+	}
 }
 
 func (s *Heartbeat) Deregister() error {
@@ -324,5 +334,6 @@ func (s *Heartbeat) stopTicker() {
 		s.tickerLock.RLock()
 		defer s.tickerLock.RUnlock()
 		s.ticker.Stop()
+		s.tickerStopChan <- true
 	}
 }
