@@ -147,7 +147,6 @@ type Heartbeat struct {
 	reg                   *registration.Registration
 	firstHearbeat         bool
 	tickerStopChan        chan bool
-	tickerIsRunning       bool
 	previousPeriodSeconds int64
 	sendLock              sync.Mutex
 	tickerLock            sync.RWMutex
@@ -173,7 +172,6 @@ func NewHeartbeatService(dispatcherClient pb.DispatcherClient, configManager *cf
 		previousPeriodSeconds: -1,
 		log:                   *log.New(os.Stderr, log.Prefix(), log.Flags(), log.CurrentLevel()),
 		tickerStopChan:        make(chan bool),
-		tickerIsRunning:       false,
 	}
 }
 
