@@ -544,12 +544,15 @@ var _ = Describe("Heartbeat", func() {
 			}
 
 			// when
+			// Calling Update in goroutines to simulate and test data races
+			go func() { Expect(hb.Update(cfg)).NotTo(HaveOccurred()) }()
+			go func() { Expect(hb.Update(cfg)).NotTo(HaveOccurred()) }()
 			err := hb.Update(cfg)
 
 			// then
 			Expect(err).NotTo(HaveOccurred())
 			Expect(hb.HasStarted()).To(BeTrue())
-			time.Sleep(5 * time.Second)
+			time.Sleep(4 * time.Second)
 
 			Expect(len(clientSuccess.GetHwInfoList())).To(Equal(1))
 			writer.Flush()
